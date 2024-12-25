@@ -1,29 +1,39 @@
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 struct Order {
     std::string orderId;
+    char orderType;
     int orderSize;
     float price;
+    int priority;
+
 };
-int main() {
-    std::string fileName;
-    std::cin>>fileName;
+void processFile(const std::string &fileName) {
     std::ifstream inputFile(fileName);
-    if (!inputFile.is_open()) {
-        std::cerr << "Error: Could not open the file " << fileName << std::endl;
-        return 1;
-    }
+
     float previousTransactionPrice;
     inputFile >> previousTransactionPrice;
 
+
+    std::vector<Order> orders;
     std::string myText;
     std::string line;
     while (std::getline (inputFile, line)) {
         myText += line + "\n";
     }
+
+
     inputFile.close();
 
-    return 0;
+}
+
+int main() {
+    std::string fileName;
+    std::cout << "Enter the file name: ";
+    std::cin>>fileName;
+    processFile(fileName);
+    return 1;
 
 }
