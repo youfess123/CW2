@@ -11,14 +11,13 @@ struct Order {
     int priority;
 };
 
-void processFile(const std::string &fileName) {
+std::vector<Order> processFile(const std::string &fileName) {
     std::ifstream inputFile(fileName);
     std::vector<Order> orders;
     int priority=1;
 
     float previousTransactionPrice;
     inputFile >> previousTransactionPrice;
-
 
     std::string line;
     while (std::getline (inputFile, line)) {
@@ -32,14 +31,18 @@ void processFile(const std::string &fileName) {
             orders.push_back(order);
         }
     }
+
+    inputFile.close();
+    return orders;
+
+}
+
+void processOrder(const std::vector<Order> &orders) {
     for (const auto& order : orders) {
         std::cout << "Order ID: " << order.orderId << ", Type: " << order.orderType
                   << ", Size: " << order.orderSize << ", Price: " << order.price
                   << ", Priority: " << order.priority << std::endl;
     }
-
-    inputFile.close();
-
 }
 
 int main() {
@@ -47,6 +50,8 @@ int main() {
     std::cout << "Enter the file name: ";
     std::cin>>fileName;
     processFile(fileName);
+    std::vector<Order> orders = processFile(fileName);
+    processOrder(orders);
 
     return 1;
 
