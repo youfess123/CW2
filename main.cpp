@@ -25,7 +25,7 @@ void processFile(const std::string &fileName) {
         std::istringstream stringStream(line);
         Order order;
         if (stringStream >> order.orderId >> order.orderType >> order.orderSize) {
-            order.price = previousTransactionPrice;
+            order.price = previousTransactionPrice;  //this might be incorrect find out later.
             if (stringStream >> order.price){
             }
             order.priority = priority++;
