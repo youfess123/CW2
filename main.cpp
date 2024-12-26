@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <sstream>
 
 struct Order {
     std::string orderId;
@@ -8,22 +9,32 @@ struct Order {
     int orderSize;
     float price;
     int priority;
-
 };
+
 void processFile(const std::string &fileName) {
     std::ifstream inputFile(fileName);
+    std::vector<Order> orders;
+    int priority=1;
 
     float previousTransactionPrice;
     inputFile >> previousTransactionPrice;
 
 
-    std::vector<Order> orders;
-    std::string myText;
+
     std::string line;
     while (std::getline (inputFile, line)) {
-        myText += line + "\n";
+        std::istringstream stringStream(line);
+        Order order;
+        if (stringStream >> order.orderId >> order.orderType >> order.orderSize >>order.price) {
+            order.priority = priority++;
+            orders.push_back(order);
+        }
     }
-
+    for (const auto& order : orders) {
+        std::cout << "Order ID: " << order.orderId << ", Type: " << order.orderType
+                  << ", Size: " << order.orderSize << ", Price: " << order.price
+                  << ", Priority: " << order.priority << std::endl;
+    }
 
     inputFile.close();
 
@@ -34,6 +45,7 @@ int main() {
     std::cout << "Enter the file name: ";
     std::cin>>fileName;
     processFile(fileName);
+
     return 1;
 
 }
