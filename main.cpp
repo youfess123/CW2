@@ -7,11 +7,11 @@
 
 // class Order {
 //
-//     std::string orderId;
-//     char orderType;
-//     int orderSize;
-//     float price = 0.0;
-//     int priority;
+//     // std::string orderId;
+//     // char orderType;
+//     // int orderSize;
+//     // float price = 0.0;
+//     // int priority;
 //
 // };
 //
@@ -43,30 +43,48 @@
 //         std::cout << "order " << order.orderId +" " << order.orderSize + " shares unexecuted" << std::endl;
 //     }
 // }
-
-const std::vector<Order> buyOrders;
-const std::vector<Order> sellOrders;
+std::vector<Order> pendingOrders;
+std::vector<Order> buyOrders;
+std::vector<Order> sellOrders;
 
 
 void processFile(std::ifstream& file) {
+
     float previousTransactionPrice;
     file >> previousTransactionPrice;
+
     std::string orderID, orderTypeStr;
+    int arrivalDateTime=1;
     long targetQuantity;
     float limitPrice;
-    std::string line;
 
+
+    std::string line;
     while (std::getline (file, line)) {
         std::istringstream stringStream(line);
+        if (stringStream >> orderID >> orderTypeStr >> targetQuantity) {
+            OrderType orderType = (orderTypeStr == "B") ? OrderType::BUYING_ORDER : OrderType::SELLING_ORDER;
+            limitPrice = previousTransactionPrice;
+            Order order;
 
-        if (stringStream >> orderID >> orderTypeStr >> targetQuantity >> limitPrice) {
-            if(orderTypeStr=="B"||orderTypeStr=="S" ) {
-
+            if (stringStream >> limitPrice) {
+                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::LIMIT, targetQuantity, limitPrice);
+            } else {
+                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::MARKET, targetQuantity, limitPrice);
             }
-            std::cout << orderID << " " << orderTypeStr << " " << targetQuantity << " "<< limitPrice <<std::endl;
+
+            pendingOrders.push_back(order);
         }
     }
 
+    for(const auto &order : pendingOrders) {
+        std::cout << order << std::endl;
+        if (order.getOrderType()==OrderType::BUYING_ORDER) {
+            buyOrders.push_back(order);
+        }else {
+            sellOrders.push_back(order);
+        }
+    }
 
 }
 
@@ -90,5 +108,6 @@ int main(int argc, char* argv[]) {
     // processOrder(pendingOrders);
 
     file.close();
+
     return 0;
 }

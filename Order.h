@@ -13,11 +13,11 @@ enum class OrderPricingType {
     LIMIT
 };
 
-enum class OrderState {
-    PENDING,
-    EXECUTED,
-    UNEXECUTED
-};
+// enum class OrderState {
+//     PENDING,
+//     EXECUTED,
+//     UNEXECUTED
+// };
 
 class Order {
 private:
@@ -26,20 +26,35 @@ private:
     std::string orderID;
     OrderType orderType;
     OrderPricingType pricingType;
-    OrderState orderState;
+    // OrderState orderState;
     long targetQuantity;
     float limitPrice;
 
 
 public:
-    Order(int arrivalDateTime, const std::string& orderID, OrderType orderType,
-          OrderPricingType pricingType, OrderState orderState, long targetQuantity, float limitPrice);
+    Order() :
+    arrivalDateTime(0),
+    orderID(""),
+    orderType(OrderType::BUYING_ORDER),
+    pricingType(OrderPricingType::MARKET),
+    targetQuantity(0),
+    limitPrice(0.0) {}
+
+    Order(
+        int arrivalDateTime,
+        const std::string& orderID,
+        OrderType orderType,
+        OrderPricingType pricingType,
+        // OrderState orderState,
+        long targetQuantity,
+        float limitPrice
+        );
 
     int getArrivalDateTime() const;
     std::string getOrderID() const;
     OrderType getOrderType() const;
     OrderPricingType getPricingType() const;
-    OrderState getOrderState() const;
+    // OrderState getOrderState() const;
     long getTargetQuantity() const;
     float getLimitPrice() const;
 
@@ -47,10 +62,10 @@ public:
     void setOrderID(const std::string& orderID);
     void setOrderType(OrderType orderType);
     void setPricingType(OrderPricingType pricingType);
-    void setOrderState(OrderState orderState);
+    // void setOrderState(OrderState orderState);
     void setTargetQuantity(long targetQuantity);
     void setLimitPrice(float limitPrice);
 
 };
-
+std::ostream& operator<<(std::ostream& os, const Order& order);
 #endif//ORDER_H
