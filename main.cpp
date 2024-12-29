@@ -9,10 +9,27 @@
 std::vector<Order> buyOrders;
 std::vector<Order> sellOrders;
 std::vector<Order> executedOrders;
-std::vector<Order> unexecutedOrders;
+
 float previousTransactionPrice;
 
-
+float determineExecutionPrice(const Order& sellOrder, const Order& buyOrder) {
+    if (isMarketOrder(sellOrder) && isMarketOrder(buyOrder)) {
+        return previousTransactionPrice;
+    }
+    if (!isMarketOrder(sellOrder) && !isMarketOrder(buyOrder)) {
+        if(sellOrder.getArrivalDateTime()<buyOrder.getArrivalDateTime()) {
+            return sellOrder.getLimitPrice();
+        }else {
+            return buyOrder.getLimitPrice();
+        }
+    }
+    if (isMarketOrder(sellOrder) && !isMarketOrder(buyOrder)) {
+        return buyOrder.getLimitPrice();
+    }
+    if (isMarketOrder(buyOrder) && !isMarketOrder(sellOrder)) {
+        return sellOrder.getLimitPrice();
+    }
+}
 
 bool compareOrders(const Order& a,const Order& b,bool isBuyOrder) {
 
@@ -66,7 +83,13 @@ void printPendingOrders(const std::vector<Order> &buyOrders, const std::vector<O
                       << order.getTargetQuantity() << std::endl;
         }
     }
+    std::cout << "Executed Orders \n";
+    std::cout << "-------------------\n";
     std::cout << "\n";
+    for (const auto& order : executedOrders) {
+        std::cout<< order.getOrderID() << " " << order.getTargetQuantity() << std::endl;
+    }
+
 }
 bool canMatchOrder(const Order& buyOrder, const Order& sellOrder) {
     return (isMarketOrder(buyOrder) || isMarketOrder(sellOrder)||buyOrder.getLimitPrice() >= sellOrder.getLimitPrice());
@@ -82,12 +105,8 @@ void executeOrders(const std::vector<Order> &buyOrders, const std::vector<Order>
                 continue;
             }
             if (canMatchOrder(buyOrder,sellOrder)) {
-                int tradedSharesQuantity;
-                if(buyOrder.getTargetQuantity()>=sellOrder.getTargetQuantity() ) {
-                    tradedSharesQuantity=buyOrder.getTargetQuantity()-sellOrder.getTargetQuantity();
-                }else {
-                    tradedSharesQuantity=sellOrder.getTargetQuantity()-buyOrder.getTargetQuantity();
-                }
+                int tradedSharesQuantity = std::min(buyOrder.getTargetQuantity(), sellOrder.getTargetQuantity());
+
                 buyOrder.setTargetQuantity(buyOrder.getTargetQuantity() - tradedSharesQuantity);
                 sellOrder.setTargetQuantity(sellOrder.getTargetQuantity() - tradedSharesQuantity);
             }
@@ -113,9 +132,9 @@ void readOrdersFromFile(std::ifstream& file) {
             Order order;
 
             if (stringStream >> limitPrice) {
-                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::LIMIT, targetQuantity, limitPrice);
+                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::LIMIT, OrderState::PENDING, targetQuantity, limitPrice);
             } else {
-                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::MARKET, targetQuantity, limitPrice);
+                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::MARKET,OrderState::PENDING, targetQuantity, limitPrice);
             }
             if (checkOrderType(order)) {
                 buyOrders.push_back(order);
