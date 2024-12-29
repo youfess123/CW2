@@ -5,48 +5,25 @@
 #include <vector>
 #include <sstream>
 
-// class Order {
-//
-//     // std::string orderId;
-//     // char orderType;
-//     // int orderSize;
-//     // float price = 0.0;
-//     // int priority;
-//
-// };
-//
-//
 
-// void printPendingOrder(const std::vector<Order> &buyOrders, const std::vector<Order> &sellOrders, float lastTransactionPrice) {
-//
-//     std::cout << "Last trading price: " << std::fixed << std::setprecision(2) << lastTransactionPrice << "\n";
-//     std::cout << "Buy                       Sell\n";
-//     std::cout << "------------------------------------------\n";
-//
-//
-// }
-//
-// void processOrder(const std::vector<Order> &pendingOrders) {
-//     std::vector<Order> executedOrders;
-//     std::vector<Order> unexecutedOrders;
-//
-//     for (const auto& order : executedOrders) {
-//         std::string type;
-//         if(order.orderType =='B') {
-//             type="purchased";
-//         }else {
-//             type="sold";
-//         }
-//         std::cout << "order " << order.orderId << " " << order.orderSize << " shares "+type+" at price " << order.price << std::endl;
-//     }
-//     for (const auto& order : unexecutedOrders) {
-//         std::cout << "order " << order.orderId +" " << order.orderSize + " shares unexecuted" << std::endl;
-//     }
-// }
-std::vector<Order> pendingOrders;
+
+void printPendingOrder(const std::vector<Order> &buyOrders, const std::vector<Order> &sellOrders, float lastTransactionPrice) {
+
+    std::cout << "Last trading price: " << std::fixed << std::setprecision(2) << lastTransactionPrice << "\n";
+    std::cout << "Buy                       Sell\n";
+    std::cout << "------------------------------------------\n";
+
+
+}
+
+
+
 std::vector<Order> buyOrders;
 std::vector<Order> sellOrders;
-
+std::vector<Order> pendingOrders;
+std::vector<Order> unsortedOrders;
+std::vector<Order> executedOrders;
+std::vector<Order> unexecutedOrders;
 
 void processFile(std::ifstream& file) {
 
@@ -72,13 +49,11 @@ void processFile(std::ifstream& file) {
             } else {
                 order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::MARKET, targetQuantity, limitPrice);
             }
-
-            pendingOrders.push_back(order);
+            unsortedOrders.push_back(order);
         }
     }
 
-    for(const auto &order : pendingOrders) {
-        std::cout << order << std::endl;
+    for(const auto &order : unsortedOrders) {
         if (order.getOrderType()==OrderType::BUYING_ORDER) {
             buyOrders.push_back(order);
         }else {
@@ -86,6 +61,26 @@ void processFile(std::ifstream& file) {
         }
     }
 
+
+}
+void processOrder() {
+    for (const auto &order : unsortedOrders) {
+        if (order.getOrderType()==OrderType::BUYING_ORDER) {
+            if(order.getPricingType()==OrderPricingType::MARKET) {
+                pendingOrders.push_back(order);
+            }else {
+                if()
+            }
+        }else{
+            if(order.getPricingType()==OrderPricingType::MARKET) {
+                pendingOrders.push_back(order);
+        }
+    }
+
+
+    for (const auto& order : unexecutedOrders) {
+        std::cout << "order " << order.getOrderID() +" " << order.getTargetQuantity() + " shares unexecuted" << std::endl;
+    }
 }
 
 int main(int argc, char* argv[]) {
