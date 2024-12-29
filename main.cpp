@@ -5,9 +5,6 @@
 #include <iomanip>
 #include <vector>
 #include <sstream>
-void readOrdersFromFile(std::ifstream& file);
-void sortOrderPriority(std::vector<Order>& buyOrders, std::vector<Order>& sellOrders);
-void printPendingOrders(const std::vector<Order>& buyOrders, const std::vector<Order>& sellOrders, float lastTransactionPrice);
 
 std::vector<Order> buyOrders;
 std::vector<Order> sellOrders;
@@ -15,38 +12,7 @@ std::vector<Order> executedOrders;
 std::vector<Order> unexecutedOrders;
 float previousTransactionPrice;
 
-void readOrdersFromFile(std::ifstream& file) {
 
-    file >> previousTransactionPrice;
-
-    std::string orderID, orderTypeStr;
-    int arrivalDateTime=1;
-    long targetQuantity;
-    float limitPrice;
-
-    std::string line;
-    while (std::getline (file, line)) {
-        std::istringstream stringStream(line);
-        if (stringStream >> orderID >> orderTypeStr >> targetQuantity) {
-            OrderType orderType = (orderTypeStr == "B") ? OrderType::BUYING_ORDER : OrderType::SELLING_ORDER;
-            limitPrice = previousTransactionPrice;
-            Order order;
-
-            if (stringStream >> limitPrice) {
-                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::LIMIT, targetQuantity, limitPrice);
-            } else {
-                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::MARKET, targetQuantity, limitPrice);
-            }
-            if (checkOrderType(order)) {
-                buyOrders.push_back(order);
-            } else {
-                sellOrders.push_back(order);
-            }
-            sortOrderPriority(buyOrders, sellOrders);
-            printPendingOrders(buyOrders, sellOrders, previousTransactionPrice);
-        }
-    }
-}
 
 bool compareOrders(const Order& a,const Order& b,bool isBuyOrder) {
 
@@ -109,6 +75,39 @@ void printPendingOrders(const std::vector<Order> &buyOrders, const std::vector<O
 
 void matchOrders(const std::vector<Order> &buyOrders, const std::vector<Order> &sellOrders) {
 
+}
+
+void readOrdersFromFile(std::ifstream& file) {
+
+    file >> previousTransactionPrice;
+
+    std::string orderID, orderTypeStr;
+    int arrivalDateTime=1;
+    long targetQuantity;
+    float limitPrice;
+
+    std::string line;
+    while (std::getline (file, line)) {
+        std::istringstream stringStream(line);
+        if (stringStream >> orderID >> orderTypeStr >> targetQuantity) {
+            OrderType orderType = (orderTypeStr == "B") ? OrderType::BUYING_ORDER : OrderType::SELLING_ORDER;
+            limitPrice = previousTransactionPrice;
+            Order order;
+
+            if (stringStream >> limitPrice) {
+                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::LIMIT, targetQuantity, limitPrice);
+            } else {
+                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::MARKET, targetQuantity, limitPrice);
+            }
+            if (checkOrderType(order)) {
+                buyOrders.push_back(order);
+            } else {
+                sellOrders.push_back(order);
+            }
+            sortOrderPriority(buyOrders, sellOrders);
+            printPendingOrders(buyOrders, sellOrders, previousTransactionPrice);
+        }
+    }
 }
 
 int main(int argc, char* argv[]) {
