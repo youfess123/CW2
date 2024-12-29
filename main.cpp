@@ -16,18 +16,15 @@ float previousTransactionPrice;
 
 bool compareOrders(const Order& a,const Order& b,bool isBuyOrder) {
 
-    if (checkOrderPricingType(a) && !checkOrderPricingType(b)) {
+    if (isMarketOrder(a) && !isMarketOrder(b)) {
         return true;
     }
-
-    if (!checkOrderPricingType(a) && checkOrderPricingType(b)) {
+    if (!isMarketOrder(a) && isMarketOrder(b)) {
         return false;
     }
-
     if (a.getLimitPrice() == b.getLimitPrice()) {
         return a.getArrivalDateTime() < b.getArrivalDateTime();
     }
-
     return isBuyOrder ? a.getLimitPrice() > b.getLimitPrice() : a.getLimitPrice() < b.getLimitPrice();
 }
 
@@ -36,7 +33,6 @@ void sortOrderPriority(std::vector<Order>& buyOrders, std::vector<Order>& sellOr
     std::sort(buyOrders.begin(), buyOrders.end(), [](const Order& a, const Order& b) {
         return compareOrders(a, b, true);
     });
-
     std::sort(sellOrders.begin(), sellOrders.end(), [](const Order& a, const Order& b) {
         return compareOrders(a, b, false);
     });
@@ -49,7 +45,7 @@ void printPendingOrders(const std::vector<Order> &buyOrders, const std::vector<O
     std::cout << "-------------------\n";
 
     for (const auto& order : buyOrders) {
-        if (order.getPricingType() == OrderPricingType::MARKET) {
+        if (isMarketOrder(order)) {
             std::cout << order.getOrderID() << " M " << order.getTargetQuantity() << std::endl;
         } else {
             std::cout << order.getOrderID() << " "
@@ -62,7 +58,7 @@ void printPendingOrders(const std::vector<Order> &buyOrders, const std::vector<O
     std::cout << "Sell \n";
     std::cout << "-------------------\n";
     for (const auto& order : sellOrders) {
-        if (order.getPricingType() == OrderPricingType::MARKET) {
+        if (isMarketOrder(order)) {
             std::cout << order.getOrderID() << " M " << order.getTargetQuantity() << std::endl;
         } else {
             std::cout << order.getOrderID() << " "
@@ -72,9 +68,31 @@ void printPendingOrders(const std::vector<Order> &buyOrders, const std::vector<O
     }
     std::cout << "\n";
 }
+bool canMatchOrder(const Order& buyOrder, const Order& sellOrder) {
+    return (isMarketOrder(buyOrder) || isMarketOrder(sellOrder)||buyOrder.getLimitPrice() >= sellOrder.getLimitPrice());
+}
 
-void matchOrders(const std::vector<Order> &buyOrders, const std::vector<Order> &sellOrders) {
-
+void executeOrders(const std::vector<Order> &buyOrders, const std::vector<Order> &sellOrders, float lastTransactionPrice) {
+    for (auto buyOrder : buyOrders) {
+        if (buyOrder.getTargetQuantity() ==0) {
+            continue;
+        }
+        for (auto sellOrder : sellOrders) {
+            if (sellOrder.getTargetQuantity() == 0) {
+                continue;
+            }
+            if (canMatchOrder(buyOrder,sellOrder)) {
+                int tradedSharesQuantity;
+                if(buyOrder.getTargetQuantity()>=sellOrder.getTargetQuantity() ) {
+                    tradedSharesQuantity=buyOrder.getTargetQuantity()-sellOrder.getTargetQuantity();
+                }else {
+                    tradedSharesQuantity=sellOrder.getTargetQuantity()-buyOrder.getTargetQuantity();
+                }
+                buyOrder.setTargetQuantity(buyOrder.getTargetQuantity() - tradedSharesQuantity);
+                sellOrder.setTargetQuantity(sellOrder.getTargetQuantity() - tradedSharesQuantity);
+            }
+        }
+    }
 }
 
 void readOrdersFromFile(std::ifstream& file) {

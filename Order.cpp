@@ -48,6 +48,6 @@ std::ostream& operator<<(std::ostream& os, const Order& order) {
 bool checkOrderType(const Order& order) {
     return order.getOrderType() == OrderType::BUYING_ORDER;
 }
-bool checkOrderPricingType(const Order& order) {
+bool isMarketOrder(const Order& order) {
     return order.getPricingType() == OrderPricingType::MARKET;
 }

@@ -69,6 +69,6 @@ public:
 };
 std::ostream& operator<<(std::ostream& os, const Order& order);
 bool checkOrderType(const Order& order);
-bool checkOrderPricingType(const Order& order);
+bool isMarketOrder(const Order& order);
 #endif//ORDER_H
 
