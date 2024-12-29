@@ -1,40 +1,28 @@
+#include <algorithm>
 #include <iostream>
 #include "Order.h"
 #include <fstream>
 #include <iomanip>
 #include <vector>
 #include <sstream>
-
-
-
-void printPendingOrder(const std::vector<Order> &buyOrders, const std::vector<Order> &sellOrders, float lastTransactionPrice) {
-
-    std::cout << "Last trading price: " << std::fixed << std::setprecision(2) << lastTransactionPrice << "\n";
-    std::cout << "Buy                       Sell\n";
-    std::cout << "------------------------------------------\n";
-
-
-}
-
-
+void readOrdersFromFile(std::ifstream& file);
+void sortOrderPriority(std::vector<Order>& buyOrders, std::vector<Order>& sellOrders);
+void printPendingOrders(const std::vector<Order>& buyOrders, const std::vector<Order>& sellOrders, float lastTransactionPrice);
 
 std::vector<Order> buyOrders;
 std::vector<Order> sellOrders;
-std::vector<Order> pendingOrders;
-std::vector<Order> unsortedOrders;
 std::vector<Order> executedOrders;
 std::vector<Order> unexecutedOrders;
+float previousTransactionPrice;
 
-void processFile(std::ifstream& file) {
+void readOrdersFromFile(std::ifstream& file) {
 
-    float previousTransactionPrice;
     file >> previousTransactionPrice;
 
     std::string orderID, orderTypeStr;
     int arrivalDateTime=1;
     long targetQuantity;
     float limitPrice;
-
 
     std::string line;
     while (std::getline (file, line)) {
@@ -49,38 +37,78 @@ void processFile(std::ifstream& file) {
             } else {
                 order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::MARKET, targetQuantity, limitPrice);
             }
-            unsortedOrders.push_back(order);
-        }
-    }
-
-    for(const auto &order : unsortedOrders) {
-        if (order.getOrderType()==OrderType::BUYING_ORDER) {
-            buyOrders.push_back(order);
-        }else {
-            sellOrders.push_back(order);
-        }
-    }
-
-
-}
-void processOrder() {
-    for (const auto &order : unsortedOrders) {
-        if (order.getOrderType()==OrderType::BUYING_ORDER) {
-            if(order.getPricingType()==OrderPricingType::MARKET) {
-                pendingOrders.push_back(order);
-            }else {
-                if()
+            if (checkOrderType(order)) {
+                buyOrders.push_back(order);
+            } else {
+                sellOrders.push_back(order);
             }
-        }else{
-            if(order.getPricingType()==OrderPricingType::MARKET) {
-                pendingOrders.push_back(order);
+            sortOrderPriority(buyOrders, sellOrders);
+            printPendingOrders(buyOrders, sellOrders, previousTransactionPrice);
         }
     }
+}
 
+bool compareOrders(const Order& a,const Order& b,bool isBuyOrder) {
 
-    for (const auto& order : unexecutedOrders) {
-        std::cout << "order " << order.getOrderID() +" " << order.getTargetQuantity() + " shares unexecuted" << std::endl;
+    if (checkOrderPricingType(a) && !checkOrderPricingType(b)) {
+        return true;
     }
+
+    if (!checkOrderPricingType(a) && checkOrderPricingType(b)) {
+        return false;
+    }
+
+    if (a.getLimitPrice() == b.getLimitPrice()) {
+        return a.getArrivalDateTime() < b.getArrivalDateTime();
+    }
+
+    return isBuyOrder ? a.getLimitPrice() > b.getLimitPrice() : a.getLimitPrice() < b.getLimitPrice();
+}
+
+void sortOrderPriority(std::vector<Order>& buyOrders, std::vector<Order>& sellOrders) {
+
+    std::sort(buyOrders.begin(), buyOrders.end(), [](const Order& a, const Order& b) {
+        return compareOrders(a, b, true);
+    });
+
+    std::sort(sellOrders.begin(), sellOrders.end(), [](const Order& a, const Order& b) {
+        return compareOrders(a, b, false);
+    });
+}
+
+void printPendingOrders(const std::vector<Order> &buyOrders, const std::vector<Order> &sellOrders, float lastTransactionPrice) {
+
+    std::cout << "Last trading price: " << lastTransactionPrice << "\n";
+    std::cout << "Buy \n";
+    std::cout << "-------------------\n";
+
+    for (const auto& order : buyOrders) {
+        if (order.getPricingType() == OrderPricingType::MARKET) {
+            std::cout << order.getOrderID() << " M " << order.getTargetQuantity() << std::endl;
+        } else {
+            std::cout << order.getOrderID() << " "
+                      << order.getLimitPrice() << " "
+                      << order.getTargetQuantity() << std::endl;
+        }
+    }
+    std::cout << "\n";
+
+    std::cout << "Sell \n";
+    std::cout << "-------------------\n";
+    for (const auto& order : sellOrders) {
+        if (order.getPricingType() == OrderPricingType::MARKET) {
+            std::cout << order.getOrderID() << " M " << order.getTargetQuantity() << std::endl;
+        } else {
+            std::cout << order.getOrderID() << " "
+                      << order.getLimitPrice() << " "
+                      << order.getTargetQuantity() << std::endl;
+        }
+    }
+    std::cout << "\n";
+}
+
+void matchOrders(const std::vector<Order> &buyOrders, const std::vector<Order> &sellOrders) {
+
 }
 
 int main(int argc, char* argv[]) {
@@ -99,8 +127,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    processFile(file);
-    // processOrder(pendingOrders);
+    readOrdersFromFile(file);
 
     file.close();
 
