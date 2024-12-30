@@ -6,10 +6,25 @@
 #include <vector>
 #include <sstream>
 
+
 std::vector<Order> buyOrders;
 std::vector<Order> sellOrders;
 std::vector<Order> executedOrders;
 float previousTransactionPrice;
+
+
+void printUnexecutedOrders(const std::vector<Order>& buyOrders, const std::vector<Order>& sellOrders) {//called after program is done checks for left over shares
+    for (const auto& order : buyOrders) {
+        if (order.getTargetQuantity() > 0) {
+            std::cout << "order " << order.getOrderID() << " " << order.getTargetQuantity() << " shares unexecuted\n";
+        }
+    }
+    for (const auto& order : sellOrders) {
+        if (order.getTargetQuantity() > 0) {
+            std::cout << "order " << order.getOrderID() << " " << order.getTargetQuantity() << " shares unexecuted\n";
+        }
+    }
+}
 
 
 void printExecutedOrders(const std::vector<Order> &executedOrders) {
@@ -17,7 +32,7 @@ void printExecutedOrders(const std::vector<Order> &executedOrders) {
     std::cout << "-------------------\n";
     for (const auto& order : executedOrders) {
         std::string str;
-        checkOrderType(order)? str="purchased": str="sold";
+        isBuyOrder(order)? str="purchased": str="sold";
         std::cout<< "order " << order.getOrderID() << " " << order.getExecutedQuantity()<< " shares "+ str+" at price "<< order.getExecutionPrice()<< std::endl;
     }
 
@@ -26,50 +41,62 @@ void printExecutedOrders(const std::vector<Order> &executedOrders) {
 
 float determineExecutionPrice(const Order& buyOrder, const Order& sellOrder) {
     if (isMarketOrder(sellOrder) && isMarketOrder(buyOrder)) {
-        return previousTransactionPrice;
+        return previousTransactionPrice;  // Market&Market = previous transaction price used
     }
-    if (!isMarketOrder(sellOrder) && !isMarketOrder(buyOrder)) {
-        if(sellOrder.getArrivalDateTime()<buyOrder.getArrivalDateTime()) {
-            return sellOrder.getLimitPrice();
-        }else {
-            return buyOrder.getLimitPrice();
-        }
+
+    if (!isMarketOrder(buyOrder) && !isMarketOrder(sellOrder)) { //Limit & Limit = earliest arrival time between order's price used
+        return (
+            sellOrder.getArrivalTime() < buyOrder.getArrivalTime())
+                ? sellOrder.getLimitPrice(): buyOrder.getLimitPrice();
     }
-    if (isMarketOrder(sellOrder) && !isMarketOrder(buyOrder)) {
-        return buyOrder.getLimitPrice();
-    }
-    if (isMarketOrder(buyOrder) && !isMarketOrder(sellOrder)) {
-        return sellOrder.getLimitPrice();
-    }
+
+    return isMarketOrder(sellOrder) ? buyOrder.getLimitPrice() : sellOrder.getLimitPrice(); //Non market order's limit price is used
 }
+
 
 bool canMatchOrder(const Order& buyOrder, const Order& sellOrder) {
     return (isMarketOrder(buyOrder) || isMarketOrder(sellOrder)||buyOrder.getLimitPrice() >= sellOrder.getLimitPrice());
+    //one market order or both or buy order's limit price is higher than sell= orders are matchable
 }
 
 
-void executeOrders(std::vector<Order> &buyOrders, std::vector<Order> &sellOrders) {
+bool isOrderExecutable(const Order& buyOrder, const Order& sellOrder) {
+    return buyOrder.getTargetQuantity() > 0 && sellOrder.getTargetQuantity() > 0 && canMatchOrder(buyOrder, sellOrder);// check if there are shares left to be traded
+}
+
+
+void updateOrderAfterExecution(Order& buyOrder, Order& sellOrder, int executedQuantity, float executionPrice) {//update order so it can be used again and set price and traded shares
+    sellOrder.setTargetQuantity(sellOrder.getTargetQuantity() - executedQuantity);
+    buyOrder.setTargetQuantity(buyOrder.getTargetQuantity() - executedQuantity);
+
+    sellOrder.setExecutionPrice(executionPrice);
+    buyOrder.setExecutionPrice(executionPrice);
+
+    sellOrder.setExecutedQuantity(executedQuantity);
+    buyOrder.setExecutedQuantity(executedQuantity);
+}
+
+
+void processOrderExecution(Order& buyOrder, Order& sellOrder) {
+    float executionPrice = determineExecutionPrice(buyOrder, sellOrder);
+    int executedQuantity = std::min(buyOrder.getTargetQuantity(), sellOrder.getTargetQuantity());
+
+    previousTransactionPrice = executionPrice;
+
+    updateOrderAfterExecution(buyOrder, sellOrder, executedQuantity, executionPrice);
+
+    executedOrders.push_back(buyOrder);
+    executedOrders.push_back(sellOrder);
+}
+
+
+void executeOrders(std::vector<Order>& buyOrders, std::vector<Order>& sellOrders) {
 
     for (auto& buyOrder : buyOrders) {
         for (auto& sellOrder : sellOrders) {
-            if (buyOrder.getTargetQuantity() != 0 && sellOrder.getTargetQuantity() != 0 ) {
-                if (canMatchOrder(buyOrder,sellOrder)) {
 
-                    float executionPrice = determineExecutionPrice(buyOrder,sellOrder);
-                    int executedQuantity= std::min(buyOrder.getTargetQuantity(), sellOrder.getTargetQuantity());
-
-                    previousTransactionPrice = executionPrice;
-
-                    sellOrder.setTargetQuantity(sellOrder.getTargetQuantity() - executedQuantity);
-                    buyOrder.setTargetQuantity(buyOrder.getTargetQuantity() - executedQuantity);
-                    sellOrder.setExecutionPrice(executionPrice);
-                    buyOrder.setExecutionPrice(executionPrice);
-                    sellOrder.setExecutedQuantity(executedQuantity);
-                    buyOrder.setExecutedQuantity(executedQuantity);
-
-                    executedOrders.push_back(buyOrder);
-                    executedOrders.push_back(sellOrder);
-                }
+            if (isOrderExecutable(buyOrder, sellOrder)) {
+                processOrderExecution(buyOrder, sellOrder);
             }
         }
     }
@@ -83,7 +110,7 @@ void printPendingOrders(const std::vector<Order> &buyOrders, const std::vector<O
     std::cout << "-------------------\n";
 
     for (const auto& order : buyOrders) {
-        if(order.getTargetQuantity() != 0) {
+        if(order.getTargetQuantity() != 0) {//only prints if order is not fully executed
             if (isMarketOrder(order)) {
                 std::cout << order.getOrderID() << " M " << order.getTargetQuantity() << std::endl;
             } else {
@@ -113,17 +140,16 @@ void printPendingOrders(const std::vector<Order> &buyOrders, const std::vector<O
 
 
 bool compareOrders(const Order& a,const Order& b,bool isBuyOrder) {
-
-    if (isMarketOrder(a) && !isMarketOrder(b)) {
+    if (isMarketOrder(a) && !isMarketOrder(b)) { //priority is given to market order over limit order
         return true;
     }
-    if (!isMarketOrder(a) && isMarketOrder(b)) {
+    if (!isMarketOrder(a) && isMarketOrder(b)) { //priority is given to market order over limit order
         return false;
     }
     if (a.getLimitPrice() == b.getLimitPrice()) {
-        return a.getArrivalDateTime() < b.getArrivalDateTime();
+        return a.getArrivalTime() < b.getArrivalTime(); //if price is the same priority is given to the earliest arrival time
     }
-    return isBuyOrder ? a.getLimitPrice() > b.getLimitPrice() : a.getLimitPrice() < b.getLimitPrice();
+    return isBuyOrder ? a.getLimitPrice() > b.getLimitPrice() : a.getLimitPrice() < b.getLimitPrice();//sorts buy orders on highest price and sell orders on lowest price
 }
 
 
@@ -155,11 +181,11 @@ void readOrdersFromFile(std::ifstream& file) {
             Order order;
 
             if (stringStream >> limitPrice) {
-                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::LIMIT, OrderState::PENDING, targetQuantity, limitPrice);
+                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::LIMIT, targetQuantity, limitPrice);
             } else {
-                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::MARKET,OrderState::PENDING, targetQuantity, 0.0);// market hasno limit price
+                order = Order(arrivalDateTime++, orderID, orderType, OrderPricingType::MARKET, targetQuantity, 0.0);// market hasno limit price
             }
-            if (checkOrderType(order)) {
+            if (isBuyOrder(order)) {
                 buyOrders.push_back(order);
 
             } else {
@@ -194,16 +220,7 @@ int main(int argc, char* argv[]) {
 
     file.close();
 
-    for (const auto& order : buyOrders) {
-        if (order.getTargetQuantity() > 0) {
-            std::cout << "order " << order.getOrderID() << " " << order.getTargetQuantity() << " shares unexecuted\n";
-        }
-    }
-    for (const auto& order : sellOrders) {
-        if (order.getTargetQuantity() > 0) {
-            std::cout << "order " << order.getOrderID() << " " << order.getTargetQuantity() << " shares unexecuted\n";
-        }
-    }
+    printUnexecutedOrders(buyOrders, sellOrders);
 
     return 0;
 }
