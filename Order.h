@@ -16,7 +16,8 @@ enum class OrderPricingType {
 enum class OrderState {
     PENDING,
     EXECUTED,
-    UNEXECUTED
+    UNEXECUTED,
+    PARTIALLY_EXECUTED
 };
 
 class Order {
@@ -28,7 +29,9 @@ private:
     OrderPricingType pricingType;
     OrderState orderState;
     long targetQuantity;
+    long executedQuantity;
     float limitPrice;
+    float executionPrice;
 
 
 public:
@@ -56,7 +59,9 @@ public:
     OrderPricingType getPricingType() const;
     OrderState getOrderState() const;
     long getTargetQuantity() const;
+    long getExecutedQuantity() const;
     float getLimitPrice() const;
+    float getExecutionPrice() const;
 
     void setArrivalDateTime( int arrivalDateTime);
     void setOrderID(const std::string& orderID);
@@ -64,7 +69,9 @@ public:
     void setPricingType(OrderPricingType pricingType);
     void setOrderState(OrderState orderState);
     void setTargetQuantity(long targetQuantity);
+    void setExecutedQuantity(long executedQuantity);
     void setLimitPrice(float limitPrice);
+    void setExecutionPrice(float executionPrice);
 
 };
 std::ostream& operator<<(std::ostream& os, const Order& order);

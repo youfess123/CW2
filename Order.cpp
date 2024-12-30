@@ -16,7 +16,11 @@ Order::Order(
     pricingType(pricingType),
     orderState(orderState),
     targetQuantity(targetQuantity),
-    limitPrice(limitPrice) {}
+    limitPrice(limitPrice) {
+
+    this->setExecutionPrice(0);
+    this->setExecutedQuantity(0);
+}
 
 // Getters
 int Order::getArrivalDateTime() const { return arrivalDateTime; }
@@ -25,6 +29,8 @@ OrderType Order::getOrderType() const { return orderType; }
 OrderPricingType Order::getPricingType() const { return pricingType; }
 OrderState Order::getOrderState() const { return orderState; }
 long Order::getTargetQuantity() const { return targetQuantity; }
+long Order::getExecutedQuantity() const {return executedQuantity;}
+float Order::getExecutionPrice() const { return executionPrice; }
 float Order::getLimitPrice() const { return limitPrice; }
 
 // Setters
@@ -34,20 +40,27 @@ void Order::setOrderType(OrderType orderType) { this->orderType = orderType; }
 void Order::setPricingType(OrderPricingType pricingType) { this->pricingType = pricingType; }
 void Order::setOrderState(OrderState orderState) { this->orderState = orderState; }
 void Order::setTargetQuantity(long targetQuantity) { this->targetQuantity = targetQuantity; }
+void Order::setExecutedQuantity(long executedQuantity) { this->executedQuantity = executedQuantity;}
 void Order::setLimitPrice(float limitPrice) { this->limitPrice = limitPrice; }
+void Order::setExecutionPrice(float executionPrice) {this->executionPrice = executionPrice;}
+
 
 std::ostream& operator<<(std::ostream& os, const Order& order) {
-    os << "OrderID: " << order.getOrderID()
-       << ", OrderType: " << (order.getOrderType() == OrderType::BUYING_ORDER ? "Buying" : "Selling")
-       << ", Target Quantity: " << order.getTargetQuantity()
-       << ", Limit Price: " << order.getLimitPrice()
-       << ", Arrival DateTime: " << order.getArrivalDateTime()
-       << ", Pricing Type: " << (order.getPricingType() == OrderPricingType::MARKET ? "Market" : "Limit");
+    os  << "OrderID: " << order.getOrderID()
+        << ", OrderType: " << (order.getOrderType() == OrderType::BUYING_ORDER ? "Buying" : "Selling")
+        << ", Target Quantity: " << order.getTargetQuantity()
+        << ", Limit Price: " << order.getLimitPrice()
+        << ", Arrival DateTime: " << order.getArrivalDateTime()
+        << ", Pricing Type: " << (order.getPricingType() == OrderPricingType::MARKET ? "Market" : "Limit")
+        << ", Execution Price: " << order.getExecutionPrice()
+        << ", Execution Quantity: " << order.getExecutedQuantity();
     return os;
 }
+
 bool checkOrderType(const Order& order) {
     return order.getOrderType() == OrderType::BUYING_ORDER;
 }
+
 bool isMarketOrder(const Order& order) {
     return order.getPricingType() == OrderPricingType::MARKET;
 }
