@@ -69,4 +69,3 @@ std::ostream& operator<<(std::ostream& os, const Order& order);
 bool isBuyOrder(const Order& order);
 bool isMarketOrder(const Order& order);
 #endif//ORDER_H
-
